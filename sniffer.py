@@ -18,11 +18,11 @@ class Sniffer(object):
 	sniffer_lock = threading.Lock()
 	sniffing = False
 	shell = None 
+	tcpdump_pid = None
 	
 	def __init__(self, iface, ip = "127.0.0.1"):
 		self.ip = ip
 		self.iface = iface
-		
 
 	def show_info(self):
 		print ""
@@ -33,7 +33,11 @@ class Sniffer(object):
 
 	def execute(self,cmd1, cmd2, cmd3):
 		args = (cmd1, cmd2, cmd3)
+		tcpdump_proc = cmd3
 		self.child = Popen(args)
+
+		print "Sniffer: sniffing ...\n"
+		self.sniffer_lock.acquire()
 
 		process = Popen(['ps', '-eo' ,'pid,args'], stdout=PIPE, stderr=PIPE)
 		(result, notused) = process.communicate()
@@ -41,13 +45,14 @@ class Sniffer(object):
 		for line in lines:
 			line = line.strip()
 			(pid, cmdline) = line.split(' ', 1)
-			print "PID %s -> %s" % (pid, cmdline) 
+			if tcpdump_proc in cmdline:
+				self.tcpdump_pid = pid
 
-		print "Sniffer: sniffing ...\n"
-		self.sniffer_lock.acquire()
 		print "Sniffer: sniffing complete\n"
 		self.child.terminate() 
 		self.child.wait()
+		killarg = (cmd1, cmd2, "kill -SIGTERM %s" % self.tcpdump_pid)
+		Popen(killarg)
 		#print "sniffer return code:%d\n" % self.child.returncode
 		self.sniffer_lock.release()
 
@@ -84,8 +89,8 @@ class Sniffer(object):
 
 def test():
 	ip = "127.0.0.1"
-	iface = "eth0"
-	log = "eth0.pcap"
+	iface = "moni0"
+	log = "moni0.pcap"
 
 	snif = Sniffer(ip = ip, iface = iface)
 	snif.show_info()
