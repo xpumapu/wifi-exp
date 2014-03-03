@@ -15,7 +15,6 @@ tshark_cmd.append("-Tfields")
 tshark_cmd.append("-Eheader=y")
 tshark_cmd.append("-eframe.number")
 tshark_cmd.append("-ewlan.sa")
-tshark_cmd.append("")
 #tshark_cmd.append("-wmoni-1_filtered.pcap")
 
 print tshark_cmd
