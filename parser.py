@@ -5,14 +5,24 @@ from subprocess import Popen, PIPE
 
 sniffer_raw_file = "moni0.pcap"
 
-tshark_cmd = "tshark -r%s" % (sniffer_raw_file)
-process = Popen(['ps', '-eo' ,'pid,args'], stdout=PIPE, stderr=PIPE)
+bcn_flr = "wlan.fc.type_subtype == 8"
+
+tshark_cmd = []
+tshark_cmd.append("tshark")
+tshark_cmd.append("-r%s" % sniffer_raw_file)
+tshark_cmd.append("-R%s" % bcn_flr)
+tshark_cmd.append("-wmoni-1_filtered.pcap")
+
+print tshark_cmd
+process = Popen(tshark_cmd, stdout=PIPE, stderr=PIPE)
 (result, notused) = process.communicate()
 
+print result
 
 
 
-print "testststst"
+
+print "testststst \n \n"
 
 
 # parse results from air logs
