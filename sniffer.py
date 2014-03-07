@@ -90,21 +90,21 @@ class Sniffer(object):
 def test():
 	ip = "127.0.0.1"
 	iface = "moni0"
-	log = "moni0.pcap"
+	log = "capt1.pcap"
 
 	snif = Sniffer(ip = ip, iface = iface)
-	snif.show_info()
 	snif.set_log_file(log)
 	snif.show_info()
 
 
 	#start snifer
 	t = snif.start()
-	time.sleep(2)
+	time.sleep(5)
 	snif.stop()
 
         #delete old sniffer logs 
         
 
-test()
+if __name__ == "__main__":
+	test()
 
