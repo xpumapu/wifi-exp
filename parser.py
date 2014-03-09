@@ -4,6 +4,8 @@ import sys
 import getopt
 from subprocess import Popen, PIPE
 
+sep = ' '
+
 class ParserFiles(object):
 	in_file = ""
 	out_file = ""
@@ -24,6 +26,16 @@ class ParserFiles(object):
 
 	def set_output_file(self, outfile):
 		self.out_file = os.path.basename(outfile)
+		if os.path.isabs(outfile):
+			self.out_path = outfile
+		else :
+			self.out_path = os.path.normpath(os.path.join(self.cwd_path, outfile))
+
+	def get_input_path(self):
+		return self.in_path
+
+	def get_output_path(self):
+		return self.out_path
 
 	def show_info(self):
 		print ""
@@ -66,16 +78,18 @@ def main(argv):
 			outputfile = arg
 
 	pfiles = ParserFiles(inputfile)
+	pfiles.set_output_file(outputfile)
 	pfiles.show_info()
 
+	return pfiles
 
-def filter_beacon(sniffer_raw_file):
-	sep = ' '
+
+def get_access_points(pfiles):
 	bcn_flr = "wlan.fc.type_subtype == 8"
 
 	tshark_cmd = []
 	tshark_cmd.append("tshark")
-	tshark_cmd.append("-r%s" % sniffer_raw_file)
+	tshark_cmd.append("-r%s" % pfiles.get_input_path())
 	tshark_cmd.append("-R%s" % bcn_flr)
 	tshark_cmd.append("-Tfields")
 	tshark_cmd.append("-Eheader=y")
@@ -102,20 +116,51 @@ def filter_beacon(sniffer_raw_file):
 		if not ap_exist:
 			ap_list.append(AccessPoint(macaddr, ssid))
 		
+	return ap_list
+
+def filter_data(pfiles, src_mac, dst_mac):
+	data_flr = "wlan.fc.type_subtype == 0x28"
+	src_flr = "wlan.sa == " + src_mac
+	dst_flr = "wlan.da == " + dst_mac
+	flr = data_flr + " and " + src_flr + " and " + dst_flr
+
+	tshark_cmd = []
+	tshark_cmd.append("tshark")
+	tshark_cmd.append("-r%s" % pfiles.get_input_path())
+	tshark_cmd.append("-R%s" % data_flr)
+	#tshark_cmd.append("-R%s" % src_flr)
+	#tshark_cmd.append("-R%s" % dst_flr)
+	tshark_cmd.append("-Tfields")
+	tshark_cmd.append("-Eheader=y")
+	tshark_cmd.append("-Eseparator=" + sep)
+	tshark_cmd.append("-eframe.number")
+	tshark_cmd.append("-ewlan.sa")
+	tshark_cmd.append("-ewlan.da")
+	tshark_cmd.append("-edata.len")
+	#tshark_cmd.append("-wmoni-1_filtered.pcap")
+
+	print tshark_cmd
+	# filter raw pcap file
+	process = Popen(tshark_cmd, stdout=PIPE, stderr=PIPE)
+        (result, notused) = process.communicate()
+	return result
+
+#######################
+scr_mac = "00:24:14:54:92:00"
+dst_mac = "00:26:bb:12:ff:32"
+
+if __name__ == "__main__":
+	pfiles = main(sys.argv[1:])
+	print "p1"
+	ap_list = get_access_points(pfiles)
+
 	# print info for all found APs
 	for ap in ap_list:
 		ap.show_info()
 
-
-
-
-#######################
-if __name__ == "__main__":
-	main(sys.argv[1:])
-	sniffer_raw_file = "moni0.pcap"
-	filter_beacon(sniffer_raw_file)
-
-
+	nr_data = filter_data(pfiles, scr_mac, dst_mac)
+	print ""
+	print nr_data
 
 
 
