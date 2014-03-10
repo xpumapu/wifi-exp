@@ -118,49 +118,99 @@ def get_access_points(pfiles):
 		
 	return ap_list
 
-def filter_data(pfiles, src_mac, dst_mac):
-	data_flr = "wlan.fc.type_subtype == 0x28"
-	src_flr = "wlan.sa == " + src_mac
-	dst_flr = "wlan.da == " + dst_mac
-	flr = data_flr + " and " + src_flr + " and " + dst_flr
+def count_factor(pfiles, sta1_mac, sta2_mac, term_mac):
+	#RTP3
+	data_flr = "wlan.fc.type_subtype == 0x20"
+	src_flr = "wlan.sa == " + sta2_mac
+	dst_flr = "wlan.da == " + term_mac
+	retry_flr = "wlan.fc.retry == 1"
+	flr = data_flr + " and " + src_flr + " and " + dst_flr + " and !" + retry_flr
 
 	tshark_cmd = []
 	tshark_cmd.append("tshark")
+	tshark_cmd.append("-2")
 	tshark_cmd.append("-r%s" % pfiles.get_input_path())
-	tshark_cmd.append("-R%s" % data_flr)
-	#tshark_cmd.append("-R%s" % src_flr)
-	#tshark_cmd.append("-R%s" % dst_flr)
+	tshark_cmd.append("-R%s" % flr)
 	tshark_cmd.append("-Tfields")
 	tshark_cmd.append("-Eheader=y")
 	tshark_cmd.append("-Eseparator=" + sep)
 	tshark_cmd.append("-eframe.number")
-	tshark_cmd.append("-ewlan.sa")
-	tshark_cmd.append("-ewlan.da")
 	tshark_cmd.append("-edata.len")
-	#tshark_cmd.append("-wmoni-1_filtered.pcap")
+	tshark_cmd.append("-eframe.time_relative")
+	#tshark_cmd.append("-w%s" % pfiles.get_output_path())
 
 	print tshark_cmd
 	# filter raw pcap file
 	process = Popen(tshark_cmd, stdout=PIPE, stderr=PIPE)
-        (result, notused) = process.communicate()
+        (result, error_msg) = process.communicate()
+	if error_msg:
+		print "ERROR:"
+		print error_msg
+
+	lines = result.splitlines()
+	print "lines len %d" % len(lines)
+	print lines[1]
+	print lines[-2]
+	i = int(1)
+	(fr_nr, dlen, time) = lines[i].split(' ', 2)
+	start_time = float(time)
+	curr_time = start_time
+	end_time = float(start_time + 10)
+
+	print "start time " + str(start_time)
+	rtp3_data = int(dlen)
+
+	while curr_time < end_time:
+		i += 1
+		(fr_nr, dlen, time) = lines[i].split(' ', 2)
+		if not dlen:
+			print "No data "
+			break
+		rtp3_data += int(dlen)
+		curr_time = float(time)
+
+	
+	print "current time " + str(curr_time)
+	print "rtp3 data " + str(rtp3_data)
+	rate = float(rtp3_data) / float(curr_time - start_time)
+	rate = rate / 1024
+	print " "
+	print "RTP3 rate " + str(rate) + " KBps"
+
+	
+
 	return result
 
 #######################
-scr_mac = "00:24:14:54:92:00"
-dst_mac = "00:26:bb:12:ff:32"
+#scr_mac = "00:24:14:54:92:00"
+#dst_mac = "00:26:bb:12:ff:32"
+# Intel
+intel_mac = "24:77:03:3e:00:58"
+# Broadcom
+brcm_mac = "00:10:18:96:2a:0c"
+# APUT
+aput_mac = "00:03:7f:48:d0:b5"
+
+# terminal behind APUT
+term_mac = "00:26:5a:0f:2b:8f"
+# STA1
+sta1_mac = brcm_mac
+# STA2
+sta2_mac = intel_mac
+
+
 
 if __name__ == "__main__":
 	pfiles = main(sys.argv[1:])
-	print "p1"
 	ap_list = get_access_points(pfiles)
 
 	# print info for all found APs
 	for ap in ap_list:
 		ap.show_info()
 
-	nr_data = filter_data(pfiles, scr_mac, dst_mac)
+	nr_data = count_factor(pfiles, sta1_mac, sta2_mac, term_mac)
 	print ""
-	print nr_data
+	#print nr_data
 
 
 
