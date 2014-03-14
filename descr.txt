@@ -1,0 +1,59 @@
+at least wireshark 1.10.5 
+association should be captured
+
+
+
+tshark -r feb24-lsdk.pcap -Y"frame.number == 26666" -V -o wlan.enable_decryption:TRUE -o "uat:80211_keys:\"wpa-pwd\",\"12345678:testnet\""
+
+tshark -r feb24-lsdk.pcap -Y"frame.number == 26666" -V -o wlan.enable_decryption:TRUE -o "uat:80211_keys:\"wpa-pwd\",\"12345678\""
+
+
+SSH over IPv6 to local-loop
+ssh -6 ::1 -l root
+
+IF UP/DOWN:
+xpumapu@dell:~/projects/github/wifi-exp$ ifconfig -v wlan0
+wlan0     Link encap:Ethernet  HWaddr 10:0b:a9:0e:2d:f8  
+          BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+xpumapu@dell:~/projects/github/wifi-exp$ ifconfig -v wlan4
+wlan4     Link encap:Ethernet  HWaddr 00:03:7f:12:60:60  
+          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:24 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:2376 (2.3 KB)
+
+
+
+Sniffer:
+
+input wlan interface: eg: wlan0
+
+Check if supports monitor?
+
+iw wlan4 info
+Interface wlan4
+        ifindex 7
+        wdev 0x1
+        addr 00:03:7f:12:60:60
+        type managed
+        wiphy 0
+
+iw phy0 info
+
+        Supported interface modes:
+                 * IBSS
+                 * managed
+                 * AP
+                 * AP/VLAN
+                 * monitor
+                 * P2P-client
+                 * P2P-GO
+
+
+
