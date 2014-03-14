@@ -12,9 +12,11 @@ from subprocess import Popen, PIPE
 
 
 class Sniffer(object):
+	# machine IP addres
 	ip = ""
+	# machine monitor interface name
 	iface = ""
-	log_file = "sniffer.pcap"
+	sniffer_file = "sniffer.pcap"
 	sniffer_lock = threading.Lock()
 	sniffing = False
 	shell = None 
@@ -28,7 +30,7 @@ class Sniffer(object):
 		print ""
 		print "Sniffer IP: %s" % self.ip
 		print "Sniffer interface: %s" % self.iface 
-		print "Sniffer log file: %s" % self.log_file
+		print "Sniffer log file: %s" % self.sniffer_file
 		print ""
 
 	def execute(self,cmd1, cmd2, cmd3):
@@ -62,11 +64,11 @@ class Sniffer(object):
 
 	# start sniffer
 	def start(self):
-		if os.path.exists(self.log_file) == True:
-			rm_cmd = "rm -rfv %s" % self.log_file
+		if os.path.exists(self.sniffer_file) == True:
+			rm_cmd = "rm -rfv %s" % self.sniffer_file
 			subprocess.call(rm_cmd, shell = True)
 		
-	        sniffer_cmd = "tcpdump -i %s -w %s" % (self.iface, self.log_file)
+	        sniffer_cmd = "tcpdump -i %s -w %s" % (self.iface, self.sniffer_file)
 		cmd = ('ssh', 'root@' + self.ip, sniffer_cmd)
 		print "execute_sniffer: "
 		print  cmd
@@ -83,17 +85,17 @@ class Sniffer(object):
 			self.sniffing = False
 			
 
-	def set_log_file(self, log_file):
-		self.log_file = os.path.join(os.getcwd(), log_file)
+	def set_sniffer_file(self, sniffer_file):
+		self.sniffer_file = os.path.join(os.getcwd(), sniffer_file)
 
 
 def test():
 	ip = "127.0.0.1"
 	iface = "moni0"
-	log = "capt1.pcap"
+	sniff = "capt1.pcap"
 
 	snif = Sniffer(ip = ip, iface = iface)
-	snif.set_log_file(log)
+	snif.set_sniffer_file(sniff)
 	snif.show_info()
 
 
@@ -102,8 +104,6 @@ def test():
 	time.sleep(5)
 	snif.stop()
 
-        #delete old sniffer logs 
-        
 
 if __name__ == "__main__":
 	test()
