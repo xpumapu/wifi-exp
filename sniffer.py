@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 from socket import *
-from sys import *
+import sys
 import time
 import signal
 import commands
 import threading
 import subprocess, time
 import os
+import argparse
+from parserfiles import ParserFiles
 from subprocess import Popen, PIPE
 
 
@@ -46,7 +48,6 @@ class Sniffer(object):
 		ps_cmd = "ps -eo pid,args"
 
 		result = self.execrm(ps_cmd)
-		print "ps res: " + result
 		lines = result.splitlines()
 		for line in lines:
 			line = line.strip()
@@ -57,7 +58,8 @@ class Sniffer(object):
 		print "Sniffer: sniffing complete\n"
 		self.child.terminate() 
 		self.child.wait()
-		#killarg = (cmd1, cmd2, "kill -SIGTERM %s" % self.tcpdump_pid)
+		kill_cmd = "kill -SIGTERM " +  self.tcpdump_pid
+		result = self.execrm(kill_cmd)
 		#Popen(killarg)
 		#print "sniffer return code:%d\n" % self.child.returncode
 		self.sniffer_lock.release()
@@ -100,17 +102,26 @@ class Sniffer(object):
 			self.sniffing = False
 			
 
-	def set_sniffer_file(self, sniffer_file):
-		self.sniffer_file = os.path.join(os.getcwd(), sniffer_file)
+	def set_sniffer_files(self, pfiles):
+		self.sniffer_file = pfiles.get_output_path()
 
 
-def test_sniffer():
+def parse_input():
+	inparser = argparse.ArgumentParser()
+	inparser.add_argument("outfile", help="file name to store captured logs")
+	args = inparser.parse_args()
+	print "outfile ARG:" + args.outfile
 	ip = "127.0.0.1"
 	iface = "moni0"
-	sniff = "capt1.pcap"
 
+	pfiles = ParserFiles()
+	pfiles.set_output_file(args.outfile)
+
+	return (pfiles, ip, iface)
+
+def test_sniffer(pfiles, ip, iface):
 	snif = Sniffer(ip = ip, iface = iface)
-	snif.set_sniffer_file(sniff)
+	snif.set_sniffer_files(pfiles)
 	snif.show_info()
 
 
@@ -121,5 +132,6 @@ def test_sniffer():
 
 
 if __name__ == "__main__":
-	test_sniffer()
+	(pfiles, ip, iface) = parse_input()
+	test_sniffer(pfiles, ip, iface)
 

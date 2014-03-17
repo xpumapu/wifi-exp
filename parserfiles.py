@@ -11,15 +11,16 @@ class ParserFiles(object):
 	in_path = ""
 	out_path = ""
 
-	def __init__(self, infile):
-		self.in_file = os.path.basename(infile)
-		self.cwd_path = os.getcwd()
-		if os.path.isabs(infile):
-			self.in_path = infile
-		else :
-			self.in_path = os.path.normpath(os.path.join(self.cwd_path, infile))
-		if not os.path.exists(self.in_path):
-			print "ParserFiles error: input file does not exist " + self.in_path
+	def __init__(self, infile = None):
+		if infile !=  None:
+			self.in_file = os.path.basename(infile)
+			self.cwd_path = os.getcwd()
+			if os.path.isabs(infile):
+				self.in_path = infile
+			else :
+				self.in_path = os.path.normpath(os.path.join(self.cwd_path, infile))
+			if not os.path.exists(self.in_path):
+				print "ParserFiles error: input file does not exist " + self.in_path
 
 	def set_output_file(self, outfile):
 		self.out_file = os.path.basename(outfile)
