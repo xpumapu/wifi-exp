@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+from subprocess import Popen, PIPE
 
 nets_path = "/sys/class/net/"
 
@@ -10,6 +11,7 @@ class WlanDevice:
 	iface = ""
 	mac_addr = ""
 	pci_device = ""
+	iface_type = ""
 
 	def __init__(self, iface):	
 		self.iface = iface
@@ -25,6 +27,12 @@ class WlanDevice:
 		pci_device_path = nets_path + iface + "/phy80211/device"
 		pci_device = os.readlink(pci_device_path)
 		self.pci_device = os.path.basename(pci_device)
+
+		iw_cmd = ("iw", iface, "info")
+		process = Popen(iw_cmd, stdout=PIPE, stderr=PIPE)
+		(result, error_msg) = process.communicate()
+		print result
+		
 
 
 	def print_info(self):
