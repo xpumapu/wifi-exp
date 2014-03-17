@@ -23,6 +23,7 @@ class Sniffer(object):
 	sniffing = False
 	shell = None 
 	tcpdump_pid = None
+	tcpdump_cmd = None
 	child = None
 	
 	def __init__(self, iface, ip = "127.0.0.1"):
@@ -39,37 +40,16 @@ class Sniffer(object):
 	def sniff_bk(self,cmd1, cmd2, cmd3):
 		args = (cmd1, cmd2, cmd3)
 		tcpdump_proc = cmd3
-		self.child = Popen(args)
+		self.child = Popen(args, stdout=PIPE, stderr=PIPE)
+		resu, erru = self.child.communicate()
+		#print "resu " + resu
+		#print "erru " + erru
 
-		print "Sniffer: sniffing ...\n"
-		self.sniffer_lock.acquire()
 		
-		# sniffer finished
-		ps_cmd = "ps -eo pid,args"
-
-		result = self.execrm(ps_cmd)
-		lines = result.splitlines()
-		for line in lines:
-			line = line.strip()
-			(pid, cmdline) = line.split(' ', 1)
-			if tcpdump_proc in cmdline:
-				self.tcpdump_pid = pid
-
-		print "Sniffer: sniffing complete\n"
-		self.child.terminate() 
-		self.child.wait()
-		kill_cmd = "kill -SIGTERM " +  self.tcpdump_pid
-		result = self.execrm(kill_cmd)
-		#Popen(killarg)
-		#print "sniffer return code:%d\n" % self.child.returncode
-		self.sniffer_lock.release()
-
 	# execute command remotely
 	def execrm(self, cmd):
-		print "execrm"
 		rm_machine = "root@" + self.ip
 		rm_cmd = ("ssh", rm_machine, cmd)
-		print "rm_cmd " + str(rm_cmd)
 		process = Popen(rm_cmd, stdout=PIPE, stderr=PIPE)
 		(result, error_msg) = process.communicate()
 		if error_msg:
@@ -85,29 +65,40 @@ class Sniffer(object):
 			res = self.execrm(rm_cmd)
 			print res
 		
-	        sniffer_cmd = "tcpdump -i %s -w %s" % (self.iface, self.sniffer_file)
-		cmd = ('ssh', 'root@' + self.ip, sniffer_cmd)
-		print "execute_sniffer: "
-		print  cmd
-		self.sniffer_lock.acquire()
+	        self.tcpdump_cmd = "tcpdump -i %s -w %s" % (self.iface, self.sniffer_file)
+		cmd = ('ssh', 'root@' + self.ip, self.tcpdump_cmd)
 		self.thread = threading.Thread(target = self.sniff_bk, args=cmd)
 		self.thread.start()
+		print "Sniffer: start sniffing..."
 		self.sniffing = True
 		return self.thread
 
 	# stop sniffer
 	def stop(self):
+		# sniffer was asked to stop
+		ps_cmd = "ps -eo pid,args"
+
+		result = self.execrm(ps_cmd)
+		lines = result.splitlines()
+		for line in lines:
+			line = line.strip()
+			(pid, cmdline) = line.split(' ', 1)
+			if self.tcpdump_cmd in cmdline:
+				self.tcpdump_pid = pid
+
+		if self.tcpdump_pid != None:
+			kill_cmd = "kill -SIGINT " +  self.tcpdump_pid
+			result = self.execrm(kill_cmd)
+			print "Sniffer: sniffing complete\n"
+
 		if self.sniffing == True:
-			self.sniffer_lock.release()
 			self.sniffing = False
-			
 
 	def set_sniffer_files(self, pfiles):
 		self.sniffer_file = pfiles.get_output_path()
 
-
 def parse_input():
-	inparser = argparse.ArgumentParser()
+	inparser = argparse.ArgumentParser(description="capture air logs to <outfile>")
 	inparser.add_argument("outfile", help="file name to store captured logs")
 	args = inparser.parse_args()
 	print "outfile ARG:" + args.outfile
@@ -123,7 +114,6 @@ def test_sniffer(pfiles, ip, iface):
 	snif = Sniffer(ip = ip, iface = iface)
 	snif.set_sniffer_files(pfiles)
 	snif.show_info()
-
 
 	#start snifer
 	t = snif.start()

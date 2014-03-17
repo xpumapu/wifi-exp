@@ -62,3 +62,15 @@ Who is in lan.
 ping6 ff02::1%eth0 -c3 -w5 | awk '/bytes from/ && !x[$4]++ {gsub(":$", "", $4); print $4}'
 
 
+
+Monitor:
+sudo iw dev wlan1 interface add moni0 type monitor flags none
+sudo ifconfig moni0 up
+sudo iw wlan1 set channel 6
+
+
+
+
+
+
+
